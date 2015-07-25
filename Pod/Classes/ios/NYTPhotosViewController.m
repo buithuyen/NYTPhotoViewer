@@ -16,13 +16,13 @@
 #import "NYTPhotosOverlayView.h"
 #import "NYTPhotoCaptionView.h"
 
-NSString * const NYTPhotosViewControllerDidNavigateToPhotoNotification = @"NYTPhotosViewControllerDidNavigateToPhotoNotification";
-NSString * const NYTPhotosViewControllerWillDismissNotification = @"NYTPhotosViewControllerWillDismissNotification";
-NSString * const NYTPhotosViewControllerDidDismissNotification = @"NYTPhotosViewControllerDidDismissNotification";
+NSString *const NYTPhotosViewControllerDidNavigateToPhotoNotification = @"NYTPhotosViewControllerDidNavigateToPhotoNotification";
+NSString *const NYTPhotosViewControllerWillDismissNotification = @"NYTPhotosViewControllerWillDismissNotification";
+NSString *const NYTPhotosViewControllerDidDismissNotification = @"NYTPhotosViewControllerDidDismissNotification";
 
 static const CGFloat NYTPhotosViewControllerOverlayAnimationDuration = 0.2;
 static const CGFloat NYTPhotosViewControllerInterPhotoSpacing = 16.0;
-static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0, -3, 0};
+static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = { 3, 0, -3, 0 };
 
 @interface NYTPhotosViewController () <UIPageViewControllerDataSource, UIPageViewControllerDelegate, NYTPhotoViewControllerDelegate>
 
@@ -39,6 +39,7 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
 /// A custom notification center to scope internal notifications to this `NYTPhotosViewController` instance.
 @property (nonatomic) NSNotificationCenter *notificationCenter;
 
+@property (nonatomic) BOOL isAssignLoading;
 @property (nonatomic) BOOL shouldHandleLongPress;
 @property (nonatomic) BOOL overlayWasHiddenBeforeTransition;
 
@@ -81,15 +82,11 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
 
 #pragma mark - UIViewController
 
-- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
-    return [self initWithPhotos:nil];
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
-
+    
     [self setupPageViewControllerWithInitialPhoto:self.initialPhoto];
-
+    
     self.view.tintColor = [UIColor whiteColor];
     self.view.backgroundColor = [UIColor blackColor];
     self.pageViewController.view.backgroundColor = [UIColor clearColor];
@@ -135,39 +132,50 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
 
 #pragma mark - NYTPhotosViewController
 
+
 - (instancetype)initWithPhotos:(NSArray *)photos {
-    return [self initWithPhotos:photos initialPhoto:photos.firstObject];
+    return [self initWithPhotos:photos initialPhoto:photos.firstObject assignLoadImage:NO];
 }
 
-- (instancetype)initWithPhotos:(NSArray *)photos initialPhoto:(id <NYTPhoto>)initialPhoto {
+- (instancetype)initWithPhotos:(NSArray *)photos assignLoadImage:(BOOL)isAssignLoading {
+    return [self initWithPhotos:photos initialPhoto:photos.firstObject assignLoadImage:isAssignLoading];
+}
+
+- (instancetype)initWithPhotos:(NSArray *)photos initialPhoto:(id <NYTPhoto> )initialPhoto {
+    return [self initWithPhotos:photos initialPhoto:photos.firstObject assignLoadImage:NO];
+}
+
+- (instancetype)initWithPhotos:(NSArray *)photos initialPhoto:(id <NYTPhoto> )initialPhoto assignLoadImage:(BOOL)isAssignLoading {
     self = [super initWithNibName:nil bundle:nil];
     
     if (self) {
-        _dataSource = [[NYTPhotosDataSource alloc] initWithPhotos:photos];
-        _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(didPanWithGestureRecognizer:)];
+        self.isAssignLoading = isAssignLoading;
+        
+        _dataSource                 = [[NYTPhotosDataSource alloc] initWithPhotos:photos];
+        _panGestureRecognizer       = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(didPanWithGestureRecognizer:)];
         _singleTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTapWithGestureRecognizer:)];
         
-        _transitionController = [[NYTPhotoTransitionController alloc] init];
-        self.modalPresentationStyle = UIModalPresentationCustom;
-        self.transitioningDelegate = _transitionController;
+        _transitionController                             = [[NYTPhotoTransitionController alloc] init];
+        self.modalPresentationStyle                       = UIModalPresentationCustom;
+        self.transitioningDelegate                        = _transitionController;
         self.modalPresentationCapturesStatusBarAppearance = YES;
         
         // iOS 7 has an issue with constraints that could evaluate to be negative, so we set the width to the margins' size.
-        _overlayView = [[NYTPhotosOverlayView alloc] initWithFrame:CGRectMake(0, 0, NYTPhotoCaptionViewHorizontalMargin * 2.0, 0)];
-        _overlayView.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"NYTPhotoViewerCloseButtonX"] landscapeImagePhone:[UIImage imageNamed:@"NYTPhotoViewerCloseButtonXLandscape"] style:UIBarButtonItemStylePlain target:self action:@selector(doneButtonTapped:)];
+        _overlayView                               = [[NYTPhotosOverlayView alloc] initWithFrame:CGRectMake(0, 0, NYTPhotoCaptionViewHorizontalMargin * 2.0, 0)];
+        _overlayView.leftBarButtonItem             = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"NYTPhotoViewerCloseButtonX"] landscapeImagePhone:[UIImage imageNamed:@"NYTPhotoViewerCloseButtonXLandscape"] style:UIBarButtonItemStylePlain target:self action:@selector(doneButtonTapped:)];
         _overlayView.leftBarButtonItem.imageInsets = NYTPhotosViewControllerCloseButtinImageInsets;
-        _overlayView.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonTapped:)];
+        _overlayView.rightBarButtonItem            = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonTapped:)];
         
         _notificationCenter = [[NSNotificationCenter alloc] init];
-
-        _initialPhoto = initialPhoto;
+        
+        [self setupPageViewControllerWithInitialPhoto:initialPhoto];
     }
     
     return self;
 }
 
-- (void)setupPageViewControllerWithInitialPhoto:(id <NYTPhoto>)initialPhoto {
-    self.pageViewController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:@{UIPageViewControllerOptionInterPageSpacingKey: @(NYTPhotosViewControllerInterPhotoSpacing)}];
+- (void)setupPageViewControllerWithInitialPhoto:(id <NYTPhoto> )initialPhoto {
+    self.pageViewController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:@{ UIPageViewControllerOptionInterPageSpacingKey: @(NYTPhotosViewControllerInterPhotoSpacing) }];
     
     self.pageViewController.delegate = self;
     self.pageViewController.dataSource = self;
@@ -188,8 +196,8 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
 }
 
 - (void)addOverlayView {
-    UIColor *textColor = self.view.tintColor ?: [UIColor whiteColor];
-    self.overlayView.titleTextAttributes = @{NSForegroundColorAttributeName: textColor};
+    UIColor *textColor = self.view.tintColor ? : [UIColor whiteColor];
+    self.overlayView.titleTextAttributes = @{ NSForegroundColorAttributeName: textColor };
     
     [self updateOverlayInformation];
     [self.view addSubview:self.overlayView];
@@ -244,13 +252,12 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
                 [self.delegate photosViewController:self actionCompletedWithActivityType:activityType];
             }
         };
-
+        
         [self displayActivityViewController:activityViewController animated:YES];
     }
 }
 
 - (void)displayActivityViewController:(UIActivityViewController *)controller animated:(BOOL)animated {
-
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
         [self presentViewController:controller animated:animated completion:nil];
     }
@@ -262,8 +269,8 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
         else {
             self.activityPopoverController = [[UIPopoverController alloc] initWithContentViewController:controller];
             [self.activityPopoverController presentPopoverFromBarButtonItem:self.rightBarButtonItem
-                                               permittedArrowDirections:UIPopoverArrowDirectionAny
-                                                               animated:animated];
+                                                   permittedArrowDirections:UIPopoverArrowDirectionAny
+                                                                   animated:animated];
         }
     }
 }
@@ -300,7 +307,7 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
     self.overlayView.rightBarButtonItems = rightBarButtonItems;
 }
 
-- (void)displayPhoto:(id <NYTPhoto>)photo animated:(BOOL)animated {
+- (void)displayPhoto:(id <NYTPhoto> )photo animated:(BOOL)animated {
     if (![self.dataSource containsPhoto:photo]) {
         return;
     }
@@ -309,7 +316,7 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
     [self setCurrentlyDisplayedViewController:photoViewController animated:animated];
 }
 
-- (void)updateImageForPhoto:(id <NYTPhoto>)photo {
+- (void)updateImageForPhoto:(id <NYTPhoto> )photo {
     [self.notificationCenter postNotificationName:NYTPhotoViewControllerPhotoImageUpdatedNotification object:photo];
 }
 
@@ -345,7 +352,7 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
     
     [[NSNotificationCenter defaultCenter] postNotificationName:NYTPhotosViewControllerWillDismissNotification object:self];
     
-    [self dismissViewControllerAnimated:animated completion:^{
+    [self dismissViewControllerAnimated:animated completion: ^{
         BOOL isStillOnscreen = self.view.window != nil; // Happens when the dismissal is canceled.
         
         if (isStillOnscreen && !self.overlayWasHiddenBeforeTransition) {
@@ -382,9 +389,9 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
         
         self.overlayView.alpha = hidden ? 1.0 : 0.0;
         
-        [UIView animateWithDuration:NYTPhotosViewControllerOverlayAnimationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowAnimatedContent | UIViewAnimationOptionAllowUserInteraction animations:^{
+        [UIView animateWithDuration:NYTPhotosViewControllerOverlayAnimationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowAnimatedContent | UIViewAnimationOptionAllowUserInteraction animations: ^{
             self.overlayView.alpha = hidden ? 0.0 : 1.0;
-        } completion:^(BOOL finished) {
+        } completion: ^(BOOL finished) {
             self.overlayView.alpha = 1.0;
             self.overlayView.hidden = hidden;
         }];
@@ -394,29 +401,29 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
     }
 }
 
-- (NYTPhotoViewController *)newPhotoViewControllerForPhoto:(id <NYTPhoto>)photo {
+- (NYTPhotoViewController *)newPhotoViewControllerForPhoto:(id <NYTPhoto> )photo {
     if (photo) {
         UIView *loadingView;
         if ([self.delegate respondsToSelector:@selector(photosViewController:loadingViewForPhoto:)]) {
             loadingView = [self.delegate photosViewController:self loadingViewForPhoto:photo];
         }
         
-        NYTPhotoViewController *photoViewController = [[NYTPhotoViewController alloc] initWithPhoto:photo loadingView:loadingView notificationCenter:self.notificationCenter];
+        NYTPhotoViewController *photoViewController = [[NYTPhotoViewController alloc] initWithPhoto:photo loadingView:loadingView assignLoadImage:self.isAssignLoading notificationCenter:self.notificationCenter];
         photoViewController.delegate = self;
         [self.singleTapGestureRecognizer requireGestureRecognizerToFail:photoViewController.doubleTapGestureRecognizer];
-
-        if([self.delegate respondsToSelector:@selector(photosViewController:maximumZoomScaleForPhoto:)]) {
+        
+        if ([self.delegate respondsToSelector:@selector(photosViewController:maximumZoomScaleForPhoto:)]) {
             CGFloat maximumZoomScale = [self.delegate photosViewController:self maximumZoomScaleForPhoto:photo];
             photoViewController.scalingImageView.maximumZoomScale = maximumZoomScale;
         }
-
+        
         return photoViewController;
     }
     
     return nil;
 }
 
-- (void)didNavigateToPhoto:(id <NYTPhoto>)photo {
+- (void)didNavigateToPhoto:(id <NYTPhoto> )photo {
     if ([self.delegate respondsToSelector:@selector(photosViewController:didNavigateToPhoto:atIndex:)]) {
         [self.delegate photosViewController:self didNavigateToPhoto:photo atIndex:[self.dataSource indexOfPhoto:photo]];
     }
@@ -424,7 +431,7 @@ static const UIEdgeInsets NYTPhotosViewControllerCloseButtinImageInsets = {3, 0,
     [[NSNotificationCenter defaultCenter] postNotificationName:NYTPhotosViewControllerDidNavigateToPhotoNotification object:self];
 }
 
-- (id <NYTPhoto>)currentlyDisplayedPhoto {
+- (id <NYTPhoto> )currentlyDisplayedPhoto {
     return self.currentPhotoViewController.photo;
 }
 

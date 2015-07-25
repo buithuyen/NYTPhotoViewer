@@ -10,7 +10,9 @@
 #import "NYTPhoto.h"
 #import "NYTScalingImageView.h"
 
-NSString * const NYTPhotoViewControllerPhotoImageUpdatedNotification = @"NYTPhotoViewControllerPhotoImageUpdatedNotification";
+#import <SDWebImageManager.h>
+
+NSString *const NYTPhotoViewControllerPhotoImageUpdatedNotification = @"NYTPhotoViewControllerPhotoImageUpdatedNotification";
 
 @interface NYTPhotoViewController () <UIScrollViewDelegate>
 
@@ -66,19 +68,44 @@ NSString * const NYTPhotoViewControllerPhotoImageUpdatedNotification = @"NYTPhot
 
 #pragma mark - NYTPhotoViewController
 
-- (instancetype)initWithPhoto:(id <NYTPhoto>)photo loadingView:(UIView *)loadingView notificationCenter:(NSNotificationCenter *)notificationCenter {
+- (void)loadImageAtItem:(id <NYTPhoto> )item {
+    if (!item.image) {
+        SDWebImageManager *manager = [SDWebImageManager sharedManager];
+        [manager downloadImageWithURL:item.imageURL
+                              options:0
+                             progress: ^(NSInteger receivedSize, NSInteger expectedSize) {
+                                 // progression tracking code
+                             }
+                            completed: ^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
+                                if (image) {
+                                    //                                    item.image = image;
+                                    [self updateImage:image];
+                                }
+                            }];
+    }
+}
+
+- (instancetype)initWithPhoto:(id <NYTPhoto> )photo loadingView:(UIView *)loadingView notificationCenter:(NSNotificationCenter *)notificationCenter {
+    return [self initWithPhoto:photo loadingView:loadingView assignLoadImage:NO notificationCenter:notificationCenter];
+}
+
+- (instancetype)initWithPhoto:(id <NYTPhoto> )photo loadingView:(UIView *)loadingView assignLoadImage:(BOOL)assingLoading notificationCenter:(NSNotificationCenter *)notificationCenter {
     self = [super initWithNibName:nil bundle:nil];
     
     if (self) {
         _photo = photo;
         
-        UIImage *photoImage = photo.image ?: photo.placeholderImage;
+        UIImage *photoImage = photo.image ? : photo.placeholderImage;
         
-        _scalingImageView = [[NYTScalingImageView alloc] initWithImage:photoImage frame:CGRectZero];
+        _scalingImageView          = [[NYTScalingImageView alloc] initWithImage:photoImage frame:CGRectZero];
         _scalingImageView.delegate = self;
         
         if (!photo.image) {
             [self setupLoadingView:loadingView];
+        }
+        
+        if (assingLoading) {
+            [self loadImageAtItem:(id < NYTPhoto >)photo];
         }
         
         _notificationCenter = notificationCenter;

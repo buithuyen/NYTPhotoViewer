@@ -10,4 +10,21 @@
 
 @implementation NYTExamplePhoto
 
+- (instancetype)initWithURL:(NSURL *)imageURL {
+    self = [super init];
+    if (self) {
+        self.imageURL = imageURL;
+    }
+    return self;
+}
+
+- (instancetype)initWithURL:(NSURL *)imageURL URLThumb:(NSURL *)thumbURL {
+    self = [super init];
+    if (self) {
+        self.imageURL = imageURL;
+        self.thumbURL = thumbURLs;
+    }
+    return self;
+}
+
 @end

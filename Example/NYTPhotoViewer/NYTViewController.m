@@ -27,11 +27,11 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
 - (IBAction)imageButtonTapped:(id)sender {
     self.photos = [[self class] newTestPhotos];
     
-    NYTPhotosViewController *photosViewController = [[NYTPhotosViewController alloc] initWithPhotos:self.photos];
+    NYTPhotosViewController *photosViewController = [[NYTPhotosViewController alloc] initWithPhotos:self.photos assignLoadImage:YES];
     photosViewController.delegate = self;
     [self presentViewController:photosViewController animated:YES completion:nil];
     
-    [self updateImagesOnPhotosViewController:photosViewController afterDelayWithPhotos:self.photos];
+    //    [self updateImagesOnPhotosViewController:photosViewController afterDelayWithPhotos:self.photos];
 }
 
 // This method simulates previously blank photos loading their images after some time.
@@ -63,9 +63,9 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
             photo.placeholderImage = [UIImage imageNamed:@"NYTimesBuildingPlaceholder"];
         }
         
-        photo.attributedCaptionTitle = [[NSAttributedString alloc] initWithString:@(i + 1).stringValue attributes:@{NSForegroundColorAttributeName: [UIColor whiteColor]}];
-        photo.attributedCaptionSummary = [[NSAttributedString alloc] initWithString:@"summary" attributes:@{NSForegroundColorAttributeName: [UIColor grayColor]}];
-        photo.attributedCaptionCredit = [[NSAttributedString alloc] initWithString:@"credit" attributes:@{NSForegroundColorAttributeName: [UIColor darkGrayColor]}];
+        photo.attributedCaptionTitle = [[NSAttributedString alloc] initWithString:@(i + 1).stringValue attributes:@{ NSForegroundColorAttributeName: [UIColor whiteColor] }];
+        photo.attributedCaptionSummary = [[NSAttributedString alloc] initWithString:@"summary" attributes:@{ NSForegroundColorAttributeName: [UIColor grayColor] }];
+        photo.attributedCaptionCredit = [[NSAttributedString alloc] initWithString:@"credit" attributes:@{ NSForegroundColorAttributeName: [UIColor darkGrayColor] }];
         [photos addObject:photo];
     }
     
@@ -74,7 +74,7 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
 
 #pragma mark - NYTPhotosViewControllerDelegate
 
-- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController referenceViewForPhoto:(id <NYTPhoto>)photo {
+- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController referenceViewForPhoto:(id <NYTPhoto> )photo {
     if ([photo isEqual:self.photos[NYTViewControllerNoReferenceViewPhotoIndex]]) {
         return nil;
     }
@@ -82,7 +82,7 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
     return self.imageButton;
 }
 
-- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController loadingViewForPhoto:(id <NYTPhoto>)photo {
+- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController loadingViewForPhoto:(id <NYTPhoto> )photo {
     if ([photo isEqual:self.photos[NYTViewControllerCustomEverythingPhotoIndex]]) {
         UILabel *loadingLabel = [[UILabel alloc] init];
         loadingLabel.text = @"Custom Loading...";
@@ -93,7 +93,7 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
     return nil;
 }
 
-- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController captionViewForPhoto:(id <NYTPhoto>)photo {
+- (UIView *)photosViewController:(NYTPhotosViewController *)photosViewController captionViewForPhoto:(id <NYTPhoto> )photo {
     if ([photo isEqual:self.photos[NYTViewControllerCustomEverythingPhotoIndex]]) {
         UILabel *label = [[UILabel alloc] init];
         label.text = @"Custom Caption View";
@@ -105,23 +105,23 @@ static const NSUInteger NYTViewControllerCustomMaxZoomScalePhotoIndex = 5;
     return nil;
 }
 
-- (CGFloat)photosViewController:(NYTPhotosViewController *)photosViewController maximumZoomScaleForPhoto:(id <NYTPhoto>)photo {
+- (CGFloat)photosViewController:(NYTPhotosViewController *)photosViewController maximumZoomScaleForPhoto:(id <NYTPhoto> )photo {
     if ([photo isEqual:self.photos[NYTViewControllerCustomMaxZoomScalePhotoIndex]]) {
         return 10.0f;
     }
-
+    
     return 1.0f;
 }
 
-- (NSDictionary *)photosViewController:(NYTPhotosViewController *)photosViewController overlayTitleTextAttributesForPhoto:(id <NYTPhoto>)photo {
+- (NSDictionary *)photosViewController:(NYTPhotosViewController *)photosViewController overlayTitleTextAttributesForPhoto:(id <NYTPhoto> )photo {
     if ([photo isEqual:self.photos[NYTViewControllerCustomEverythingPhotoIndex]]) {
-        return @{NSForegroundColorAttributeName: [UIColor grayColor]};
+        return @{ NSForegroundColorAttributeName: [UIColor grayColor] };
     }
     
     return nil;
 }
 
-- (void)photosViewController:(NYTPhotosViewController *)photosViewController didNavigateToPhoto:(id <NYTPhoto>)photo atIndex:(NSUInteger)photoIndex {
+- (void)photosViewController:(NYTPhotosViewController *)photosViewController didNavigateToPhoto:(id <NYTPhoto> )photo atIndex:(NSUInteger)photoIndex {
     NSLog(@"Did Navigate To Photo: %@ identifier: %lu", photo, (unsigned long)photoIndex);
 }
 

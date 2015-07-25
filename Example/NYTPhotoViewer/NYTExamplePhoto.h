@@ -15,8 +15,14 @@
 // Redeclare all the properties as readwrite for sample/testing purposes.
 @property (nonatomic) UIImage *image;
 @property (nonatomic) UIImage *placeholderImage;
+@property (nonatomic, strong) NSURL *imageURL;
+@property (nonatomic, strong) NSURL *thumbURL;
 @property (nonatomic) NSAttributedString *attributedCaptionTitle;
 @property (nonatomic) NSAttributedString *attributedCaptionSummary;
 @property (nonatomic) NSAttributedString *attributedCaptionCredit;
+
+- (instancetype)initWithURL:(NSURL *)imageURL;
+- (instancetype)initWithURL:(NSURL *)imageURL URLThumb:(NSURL *)thumbURL;
+
 
 @end

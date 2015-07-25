@@ -13,6 +13,9 @@
  */
 @protocol NYTPhoto <NSObject>
 
+@property (nonatomic, readonly) NSURL *imageURL;
+@property (nonatomic, readonly) NSURL *thumbURL;
+
 /**
  *  The image to display.
  */

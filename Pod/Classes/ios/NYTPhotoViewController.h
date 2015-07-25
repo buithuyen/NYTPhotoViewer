@@ -53,7 +53,8 @@ extern NSString * const NYTPhotoViewControllerPhotoImageUpdatedNotification;
  *
  *  @return A fully initialized object.
  */
-- (instancetype)initWithPhoto:(id <NYTPhoto>)photo loadingView:(UIView *)loadingView notificationCenter:(NSNotificationCenter *)notificationCenter NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithPhoto:(id <NYTPhoto>)photo loadingView:(UIView*)loadingView notificationCenter:(NSNotificationCenter*)notificationCenter;
+- (instancetype)initWithPhoto:(id <NYTPhoto>)photo loadingView:(UIView*)loadingView assignLoadImage:(BOOL)assingLoading notificationCenter:(NSNotificationCenter*)notificationCenter NS_DESIGNATED_INITIALIZER;
 
 @end
 
